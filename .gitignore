@@ -1,0 +1,27 @@
+# Output directory
+/result/
+
+# All common and Hi-Res audio files
+*.mp3
+*.m4a
+*.wav
+*.flac
+*.aac
+*.ogg
+*.wma
+*.alac
+*.aiff
+*.opus
+*.dsf
+*.dff
+*.mid
+*.midi
+*.amr
+*.ape
+*.wv
+*.tta
+*.mka
+*.ra
+*.ram
+*.ac3
+*.eac3

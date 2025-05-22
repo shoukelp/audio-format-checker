@@ -3,6 +3,7 @@
 SCRIPT_DIR="./script"
 RESULT_DIR="./result"
 PY_SCRIPT="$SCRIPT_DIR/check.py"
+LYRICS_SCRIPT="$SCRIPT_DIR/lyrics.py"
 SETUP_SCRIPT="$SCRIPT_DIR/setup.py"
 
 # Run setup mode
@@ -11,10 +12,28 @@ if [[ "$1" == "setup" ]]; then
   exit 0
 fi
 
-# Require at least one argument
+if [[ "$1" == "lrc" ]]; then
+  if [[ -z "$2" ]]; then
+    echo "Usage: ./run.sh lrc <audiofile>"
+    exit 1
+  fi
+
+  AUDIO_FILE="$2"
+  if [[ ! -f "$AUDIO_FILE" ]]; then
+    echo "File not found: $AUDIO_FILE"
+    exit 1
+  fi
+
+  mkdir -p "$RESULT_DIR"
+  python3 "$LYRICS_SCRIPT" "$AUDIO_FILE"
+  exit 0
+fi
+
+
 if [[ $# -lt 1 ]]; then
   echo "Usage: ./run.sh <audiofile> [--json output.json]"
-  echo "       ./run.sh setup  # to run setup"
+  echo "       ./run.sh lrc <audiofile>"
+  echo "       ./run.sh setup"
   exit 1
 fi
 
@@ -24,7 +43,6 @@ shift
 SAVE_JSON=false
 JSON_OUTPUT=""
 
-# Check for --json flag
 if [[ "$1" == "--json" ]]; then
   SAVE_JSON=true
   shift
@@ -40,7 +58,6 @@ if [[ "$1" == "--json" ]]; then
   fi
 fi
 
-# Execute script
 if $SAVE_JSON; then
   mkdir -p "$RESULT_DIR"
   python3 "$PY_SCRIPT" "$AUDIO_FILE" --json "$JSON_OUTPUT"

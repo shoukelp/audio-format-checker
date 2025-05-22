@@ -21,15 +21,18 @@ def parse_info(data):
     info = {}
 
     format_data = data.get("format", {})
+    tags = format_data.get("tags", {})
+
+    lyrics_keys = ["lyrics", "Lyrics", "unsyncedlyrics", "syncedlyrics", "LYRICS"]
+    has_lyrics = any(key in tags for key in lyrics_keys)
+    filtered_tags = {k: v for k, v in tags.items() if k not in lyrics_keys}
+
     info["filename"] = format_data.get("filename")
     info["format_name"] = format_data.get("format_name")
     info["duration"] = format_data.get("duration")
     info["bit_rate"] = format_data.get("bit_rate")
-    info["tags"] = format_data.get("tags", {})
-
-    tags = info["tags"]
-    lyrics_keys = ["lyrics", "Lyrics", "unsyncedlyrics", "syncedlyrics", "LYRICS"]
-    info["has_lyrics"] = any(key in tags for key in lyrics_keys)
+    info["tags"] = filtered_tags
+    info["has_lyrics"] = has_lyrics
 
     for stream in data.get("streams", []):
         if stream.get("codec_type") == "audio":
