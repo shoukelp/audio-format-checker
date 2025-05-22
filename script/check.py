@@ -27,8 +27,11 @@ def parse_info(data):
     has_lyrics = any(key in tags for key in lyrics_keys)
     filtered_tags = {k: v for k, v in tags.items() if k not in lyrics_keys}
 
-    info["filename"] = format_data.get("filename")
-    info["format_name"] = format_data.get("format_name")
+    filename = format_data.get("filename")
+    info["filename"] = filename
+
+    info["format_name"] = os.path.splitext(filename)[1].lstrip(".").lower()
+
     info["duration"] = format_data.get("duration")
     info["bit_rate"] = format_data.get("bit_rate")
     info["tags"] = filtered_tags
