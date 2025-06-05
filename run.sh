@@ -15,7 +15,7 @@ fi
 # Lyrics export/import mode
 if [[ "$1" == "lrc" ]]; then
   if [[ -z "$2" ]]; then
-    echo "Usage: ./run.sh lrc <audiofile> [--import]"
+    echo "Usage: ./run.sh lrc <audiofile> [--import] [--export]"
     exit 1
   fi
 
@@ -27,20 +27,26 @@ if [[ "$1" == "lrc" ]]; then
 
   mkdir -p "$RESULT_DIR"
 
-  if [[ "$3" == "--import" ]]; then
-    echo "Note: Importing lyrics from online sources requires an internet connection."
-    python3 "$LYRICS_SCRIPT" "$AUDIO_FILE" --import
-  else
-    python3 "$LYRICS_SCRIPT" "$AUDIO_FILE"
-  fi
+  # Parse optional flags --import and --export
+  IMPORT_FLAG=""
+  EXPORT_FLAG=""
 
+  for arg in "${@:3}"; do
+    if [[ "$arg" == "--import" ]]; then
+      IMPORT_FLAG="--import"
+    elif [[ "$arg" == "--export" ]]; then
+      EXPORT_FLAG="--export"
+    fi
+  done
+
+  python3 "$LYRICS_SCRIPT" "$AUDIO_FILE" $IMPORT_FLAG $EXPORT_FLAG
   exit 0
 fi
 
 # Default audio info mode
 if [[ $# -lt 1 ]]; then
   echo "Usage: ./run.sh <audiofile> [--json output.json]"
-  echo "       ./run.sh lrc <audiofile> [--import]"
+  echo "       ./run.sh lrc <audiofile> [--import] [--export]"
   echo "       ./run.sh setup"
   exit 1
 fi

@@ -57,8 +57,8 @@ def main():
 
     # Install required Python packages
     print("\n[+] Installing required Python packages...")
-    install_pip_package("requests")
-    install_pip_package("beautifulsoup4")
+    for package in ["requests", "beautifulsoup4", "wcwidth"]:
+        install_pip_package(package)
 
     # Check internet
     check_internet_connection()

@@ -2,6 +2,7 @@ import sys
 import os
 import subprocess
 import json
+from wcwidth import wcswidth
 
 def run_ffprobe_json(file_path):
     try:
@@ -48,21 +49,43 @@ def parse_info(data):
 
     return info
 
+def format_table(rows, headers):
+    all_rows = [headers] + rows
+    col_widths = [max(wcswidth(str(cell)) for cell in col) for col in zip(*all_rows)]
+
+    def format_row(row):
+        return "| " + " | ".join(
+            f"{str(cell)}{' ' * (col_widths[i] - wcswidth(str(cell)))}"
+            for i, cell in enumerate(row)
+        ) + " |"
+
+    sep = "+-" + "-+-".join("-" * width for width in col_widths) + "-+"
+
+    table = [sep, format_row(headers), sep]
+    for row in rows:
+        table.append(format_row(row))
+    table.append(sep)
+    return "\n".join(table)
+
 def print_info(info):
-    print("Audio Information:")
-    print(f"- File        : {info.get('filename')}")
-    print(f"- Format      : {info.get('format_name')}")
-    print(f"- Codec       : {info.get('codec_name')}")
-    print(f"- Duration    : {info.get('duration')} seconds")
-    print(f"- Bitrate     : {info.get('bit_rate')} bps")
-    print(f"- Sample Rate : {info.get('sample_rate')} Hz")
-    print(f"- Channels    : {info.get('channels')} ({info.get('channel_layout')})")
-    print(f"- Contains Lyrics : {'Yes' if info.get('has_lyrics') else 'No'}")
+    audio_data = [
+        ["File", info.get("filename", "")],
+        ["Format", info.get("format_name", "")],
+        ["Codec", info.get("codec_name", "")],
+        ["Duration", f"{info.get('duration', '')} seconds"],
+        ["Bitrate", f"{info.get('bit_rate', '')} bps"],
+        ["Sample Rate", f"{info.get('sample_rate', '')} Hz"],
+        ["Channels", f"{info.get('channels', '')} ({info.get('channel_layout', '')})"],
+        ["Contains Lyrics", "Yes" if info.get("has_lyrics") else "No"]
+    ]
+
+    print("\nAudio Information:")
+    print(format_table(audio_data, headers=["Field", "Value"]))
 
     if info.get("tags"):
+        metadata = [[k, str(v)] for k, v in info["tags"].items()]
         print("\nMetadata:")
-        for key, value in info["tags"].items():
-            print(f"  {key}: {value}")
+        print(format_table(metadata, headers=["Tag", "Value"]))
 
 def save_json(info, output_path):
     try:

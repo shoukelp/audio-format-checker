@@ -5,6 +5,8 @@ import json
 import requests
 from bs4 import BeautifulSoup
 
+RESULT_DIR = "./result"
+
 def run_ffprobe_json(file_path):
     try:
         result = subprocess.run(
@@ -27,20 +29,20 @@ def extract_lyrics_from_metadata(tags):
 
 def save_lyrics_to_file(audio_file, lyrics_text):
     base_name = os.path.splitext(os.path.basename(audio_file))[0]
-    result_dir = "./result"
-    os.makedirs(result_dir, exist_ok=True)
-    lrc_path = os.path.join(result_dir, base_name + ".lrc")
+    os.makedirs(RESULT_DIR, exist_ok=True)
+    lrc_path = os.path.join(RESULT_DIR, base_name + ".lrc")
 
     try:
         with open(lrc_path, "w", encoding="utf-8") as f:
             f.write(lyrics_text)
-        print(f"Lyrics saved to {lrc_path}")
+        print(f"\n[Lyrics saved to {lrc_path}]\n")
     except Exception as e:
         print(f"Failed to save lyrics: {e}")
 
 def search_lyrics_sources(title, artist):
     results = []
 
+    # Example: lyrics.ovh API
     try:
         res = requests.get(f"https://api.lyrics.ovh/v1/{artist}/{title}")
         if res.status_code == 200:
@@ -50,6 +52,7 @@ def search_lyrics_sources(title, artist):
     except Exception as e:
         print("[lyrics.ovh] Error:", e)
 
+    # LyricsFreak scrape
     try:
         query = f"{artist} {title}".replace(" ", "+")
         search_url = f"https://www.lyricsfreak.com/search.php?a=search&q={query}"
@@ -71,7 +74,6 @@ def search_lyrics_sources(title, artist):
 
 def embed_lyrics_to_metadata(audio_file, lyrics_text):
     try:
-        # Membuat file output sementara
         temp_file = "temp_with_lyrics.m4a"
         result = subprocess.run([
             "ffmpeg", "-i", audio_file, "-metadata", f"lyrics={lyrics_text}",
@@ -88,11 +90,12 @@ def embed_lyrics_to_metadata(audio_file, lyrics_text):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python3 lyrics.py <audiofile> [--import]")
+        print("Usage: python3 lyrics.py <audiofile> [--import] [--export]")
         sys.exit(1)
 
     audio_file = sys.argv[1]
     import_mode = "--import" in sys.argv
+    export_mode = "--export" in sys.argv
 
     if not os.path.isfile(audio_file):
         print("File not found.")
@@ -109,7 +112,11 @@ if __name__ == "__main__":
     if not import_mode:
         lyrics_text = extract_lyrics_from_metadata(tags)
         if lyrics_text:
-            save_lyrics_to_file(audio_file, lyrics_text)
+            print("\nLyrics found in metadata:\n" + "-"*40)
+            print(lyrics_text)
+            print("-"*40)
+            if export_mode:
+                save_lyrics_to_file(audio_file, lyrics_text)
         else:
             print("No lyrics found in metadata.")
     else:
@@ -121,14 +128,19 @@ if __name__ == "__main__":
             sys.exit(1)
 
         for i, item in enumerate(results):
-            print(f"\n[{i + 1}] Source: {item['source']}\n{'-' * 40}\n{item['lyrics'][:200]}...\n")
+            snippet = item['lyrics'][:200].replace("\n", " ") + ("..." if len(item['lyrics']) > 200 else "")
+            print(f"\n[{i + 1}] Source: {item['source']}\n{'-'*40}\n{snippet}\n")
 
         try:
             choice = int(input(f"Select lyrics to embed (1-{len(results)}): "))
             if 1 <= choice <= len(results):
                 selected_lyrics = results[choice - 1]["lyrics"]
                 embed_lyrics_to_metadata(audio_file, selected_lyrics)
-                save_lyrics_to_file(audio_file, selected_lyrics)
+                print("\nSelected lyrics preview:\n" + "-"*40)
+                print(selected_lyrics)
+                print("-"*40)
+                if export_mode:
+                    save_lyrics_to_file(audio_file, selected_lyrics)
             else:
                 print("Invalid choice.")
         except Exception as e:
