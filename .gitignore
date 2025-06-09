@@ -1,7 +1,6 @@
 # Output directory
 /result/
 
-# All common and Hi-Res audio files
 *.mp3
 *.m4a
 *.wav
