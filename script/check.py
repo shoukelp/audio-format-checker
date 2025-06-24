@@ -68,29 +68,52 @@ def format_table(rows, headers):
     return "\n".join(table)
 
 def print_info(info):
+    tags = info.get("tags", {})
+
+    def get_tag(*keys):
+        for key in keys:
+            if key in tags:
+                return tags[key]
+        return ""
+
+    def format_duration(seconds):
+        try:
+            seconds = float(seconds)
+            minutes = int(seconds // 60)
+            secs = int(seconds % 60)
+            return f"{minutes:02d}.{secs:02d}"
+        except:
+            return ""
+
     audio_data = [
-        ["File", info.get("filename", "")],
-        ["Format", info.get("format_name", "")],
-        ["Codec", info.get("codec_name", "")],
-        ["Duration", f"{info.get('duration', '')} seconds"],
-        ["Bitrate", f"{info.get('bit_rate', '')} bps"],
+        ["Title", get_tag("title", "TITLE")],
+        ["Artist", get_tag("artist", "ARTIST")],
+        ["Album", get_tag("album", "ALBUM")],
+        ["Album Artist", get_tag("album_artist", "ALBUM_ARTIST")],
+        ["Genre", get_tag("genre", "GENRE")],
+        ["Composer", get_tag("composer", "COMPOSER")],
+        ["Year/Date", get_tag("date", "year", "DATE", "YEAR")],
+        ["Duration", format_duration(info.get("duration"))],
+        ["Bitrate", f"{int(info.get('bit_rate')) // 1000} kbps" if info.get("bit_rate") else ""],
         ["Sample Rate", f"{info.get('sample_rate', '')} Hz"],
         ["Channels", f"{info.get('channels', '')} ({info.get('channel_layout', '')})"],
-        ["Contains Lyrics", "Yes" if info.get("has_lyrics") else "No"]
+        ["Disc Number", get_tag("disc", "disc_number", "DISCNUMBER")],
+        ["Track Number", get_tag("track", "track_number", "TRACKNUMBER")],
+        ["Format", info.get("format_name", "")],
+        ["File Name", os.path.basename(info.get("filename", ""))],
+        ["File Path", info.get("filename", "")],
+        ["Contain Lyrics", "Yes" if info.get("has_lyrics") else "No"]
     ]
 
-    print("\nAudio Information:")
+    print("\nTrack Info:")
     print(format_table(audio_data, headers=["Field", "Value"]))
 
-    if info.get("tags"):
-        metadata = [[k, str(v)] for k, v in info["tags"].items()]
-        print("\nMetadata:")
-        print(format_table(metadata, headers=["Tag", "Value"]))
+    return dict(audio_data)  # for JSON export
 
-def save_json(info, output_path):
+def save_json(formatted_info, output_path):
     try:
         with open(output_path, "w", encoding="utf-8") as f:
-            json.dump(info, f, indent=2, ensure_ascii=False)
+            json.dump(formatted_info, f, indent=2, ensure_ascii=False)
         print(f"\nData saved to file: {output_path}")
     except Exception as e:
         print(f"Failed to save JSON: {e}")
@@ -119,7 +142,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     info = parse_info(data)
-    print_info(info)
+    formatted_info = print_info(info)
 
     if json_output:
-        save_json(info, json_output)
+        save_json(formatted_info, json_output)
